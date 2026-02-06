@@ -1,0 +1,6 @@
+export { Shape } from './Shape'
+export type { ShapeType } from './Shape'
+export { StickyNote, STICKY_COLORS } from './StickyNote'
+export { TextBox } from './TextBox'
+export { Connector, getConnectionPoint, getAutoConnectionPoints } from './Connector'
+export type { ConnectorType } from './Connector'
