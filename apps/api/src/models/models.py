@@ -1,10 +1,13 @@
 from uuid import UUID
 from datetime import datetime
-from sqlalchemy import String, ForeignKey, Float, Boolean, Integer, Text
+from sqlalchemy import JSON, String, ForeignKey, Float, Boolean, Integer, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects.postgresql import JSONB
 from geoalchemy2 import Geometry
 from src.core.database import Base
+
+JSONType = JSON().with_variant(JSONB, "postgresql")
+BoundsType = Geometry("POLYGON", srid=0).with_variant(Text, "sqlite")
 
 
 class User(Base):
@@ -50,7 +53,7 @@ class CanvasObject(Base):
     
     # Type and data
     object_type: Mapped[str] = mapped_column(String(50))
-    data: Mapped[dict] = mapped_column(JSONB, default=dict)
+    data: Mapped[dict] = mapped_column(JSONType, default=dict)
     
     # Position (for spatial queries)
     x: Mapped[float] = mapped_column(Float)
@@ -60,7 +63,7 @@ class CanvasObject(Base):
     
     # Bounding box for PostGIS spatial queries
     bounds: Mapped[str | None] = mapped_column(
-        Geometry("POLYGON", srid=0),
+        BoundsType,
         nullable=True
     )
     
@@ -123,8 +126,8 @@ class CanvasEvent(Base):
     object_id: Mapped[UUID | None] = mapped_column(nullable=True)
     
     # Before/After for rollback
-    previous_state: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
-    new_state: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    previous_state: Mapped[dict | None] = mapped_column(JSONType, nullable=True)
+    new_state: Mapped[dict | None] = mapped_column(JSONType, nullable=True)
     
     # When
     created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow, index=True)

@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     debug: bool = False
     
     # Database
-    database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/infinite_canvas"
+    database_url: str = "sqlite+aiosqlite:///./data/infinite_canvas.db"
     
     # Redis
     redis_url: str = "redis://localhost:6379"

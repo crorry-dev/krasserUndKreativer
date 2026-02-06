@@ -1,2 +1,5 @@
 export { JoinPage } from './JoinPage'
 export { LandingPage } from './LandingPage'
+export { ImpressumPage } from './ImpressumPage'
+export { DatenschutzPage } from './DatenschutzPage'
+export { DemoPage } from './DemoPage'

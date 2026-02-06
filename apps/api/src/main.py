@@ -1,6 +1,9 @@
+from pathlib import Path
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from src.core.config import get_settings
+from src.core.database import Base, engine
 from src.routers import boards, objects, health, guests, history, chunks, payments, users
 from src.websocket import websocket_router
 
@@ -37,3 +40,21 @@ app.include_router(websocket_router, tags=["WebSocket"])
 @app.get("/")
 async def root():
     return {"message": "Infinite Canvas API", "version": "0.1.0"}
+
+
+def _is_sqlite(url: str) -> bool:
+    return url.startswith("sqlite+aiosqlite")
+
+
+@app.on_event("startup")
+async def ensure_sqlite_schema() -> None:
+    if not _is_sqlite(settings.database_url):
+        return
+
+    database_url = settings.database_url.replace("sqlite+aiosqlite:///", "")
+    if database_url and database_url != ":memory:":
+        db_path = Path(database_url).resolve()
+        db_path.parent.mkdir(parents=True, exist_ok=True)
+
+    async with engine.begin() as connection:
+        await connection.run_sync(Base.metadata.create_all)

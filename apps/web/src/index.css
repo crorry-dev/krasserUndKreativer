@@ -10,9 +10,14 @@
 
 html, body, #root {
   width: 100%;
-  height: 100%;
-  overflow: hidden;
+  min-height: 100%;
   background-color: #1a1a2e;
+}
+
+/* Canvas pages: prevent scrolling */
+.canvas-page {
+  overflow: hidden;
+  height: 100%;
   touch-action: none;
   -webkit-touch-callout: none;
   -webkit-user-select: none;

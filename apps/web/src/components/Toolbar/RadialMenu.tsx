@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useCanvasStore, Tool, ShapeType } from '@/stores/canvasStore'
 import clsx from 'clsx'
@@ -25,6 +25,8 @@ import {
   ZoomInIcon,
   ZoomOutIcon,
   NoFillIcon,
+  MediaIcon,
+  DownloadIcon,
 } from '@/components/Icons'
 
 // Predefined color palette
@@ -39,6 +41,18 @@ const colorPalette = [
   '#8b5cf6', // Purple
   '#ec4899', // Pink
   '#000000', // Black
+]
+
+// Sticky note colors
+const stickyColors = [
+  '#FEF08A', // Yellow
+  '#BBF7D0', // Green  
+  '#FBCFE8', // Pink
+  '#DDD6FE', // Purple
+  '#BAE6FD', // Blue
+  '#FED7AA', // Orange
+  '#FECACA', // Red
+  '#E5E7EB', // Gray
 ]
 
 const tools: { id: Tool; icon: React.ReactNode; label: string }[] = [
@@ -62,12 +76,16 @@ const shapeTypes: { id: ShapeType; icon: React.ReactNode; label: string }[] = [
 
 interface RadialMenuProps {
   onHistoryClick?: () => void
+  onMediaClick?: () => void
+  onExportClick?: () => void
 }
 
-export function RadialMenu({ onHistoryClick }: RadialMenuProps) {
+export function RadialMenu({ onHistoryClick, onMediaClick, onExportClick }: RadialMenuProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [showSizeSlider, setShowSizeSlider] = useState(true)
   const [showColorPicker, setShowColorPicker] = useState(false)
+  const [hoveredTool, setHoveredTool] = useState<Tool | null>(null)
+  const [isRightMouseDown, setIsRightMouseDown] = useState(false)
   const { currentTool, setTool, viewport, setViewport, toolSettings, setToolSettings, undo, redo, canUndo, canRedo } = useCanvasStore()
   
   const handleToolSelect = useCallback((tool: Tool) => {
@@ -79,7 +97,46 @@ export function RadialMenu({ onHistoryClick }: RadialMenuProps) {
       setShowSizeSlider(false)
     }
     setIsOpen(false)
+    setHoveredTool(null)
   }, [setTool])
+  
+  // Rechtsklick-Release: Wähle das Tool unter dem Cursor und schließe das Menü
+  useEffect(() => {
+    const handleMouseUp = (e: MouseEvent) => {
+      if (e.button === 2 && isOpen && isRightMouseDown) {
+        // Wenn ein Tool gehighlighted ist, wähle es aus
+        if (hoveredTool) {
+          handleToolSelect(hoveredTool)
+        }
+        setIsOpen(false)
+        setIsRightMouseDown(false)
+        setHoveredTool(null)
+      }
+    }
+    
+    const handleMouseDown = (e: MouseEvent) => {
+      if (e.button === 2 && isOpen) {
+        setIsRightMouseDown(true)
+      }
+    }
+    
+    const handleContextMenu = (e: MouseEvent) => {
+      // Verhindere Standard-Kontextmenü wenn unser Menü offen ist
+      if (isOpen) {
+        e.preventDefault()
+      }
+    }
+    
+    window.addEventListener('mouseup', handleMouseUp)
+    window.addEventListener('mousedown', handleMouseDown)
+    window.addEventListener('contextmenu', handleContextMenu)
+    
+    return () => {
+      window.removeEventListener('mouseup', handleMouseUp)
+      window.removeEventListener('mousedown', handleMouseDown)
+      window.removeEventListener('contextmenu', handleContextMenu)
+    }
+  }, [isOpen, hoveredTool, isRightMouseDown, handleToolSelect])
   
   const handleShapeSelect = (shapeType: ShapeType) => {
     setToolSettings({ shapeType })
@@ -177,6 +234,8 @@ export function RadialMenu({ onHistoryClick }: RadialMenuProps) {
               const spacing = 52
               const x = 70 + (index * spacing) // Start 70px to the right, then space evenly
               const y = 0 // Same level as main button
+              const isHovered = hoveredTool === tool.id
+              const isSelected = currentTool === tool.id
               
               return (
                 <motion.button
@@ -184,7 +243,7 @@ export function RadialMenu({ onHistoryClick }: RadialMenuProps) {
                   initial={{ opacity: 0, scale: 0.3, x: 0, y: 0 }}
                   animate={{ 
                     opacity: 1, 
-                    scale: 1, 
+                    scale: isHovered ? 1.15 : (isSelected ? 1.1 : 1), 
                     x: x, 
                     y: y,
                   }}
@@ -196,12 +255,16 @@ export function RadialMenu({ onHistoryClick }: RadialMenuProps) {
                     delay: index * 0.015,
                   }}
                   onClick={() => handleToolSelect(tool.id)}
+                  onMouseEnter={() => setHoveredTool(tool.id)}
+                  onMouseLeave={() => setHoveredTool(null)}
                   className={clsx(
                     'absolute w-11 h-11 rounded-full flex items-center justify-center',
-                    'shadow-lg border transition-all duration-150',
-                    currentTool === tool.id
-                      ? 'bg-white text-black border-white scale-110'
-                      : 'bg-black/80 text-white border-white/20 backdrop-blur-xl hover:bg-white/20 hover:scale-105'
+                    'shadow-lg border transition-colors duration-150',
+                    isSelected
+                      ? 'bg-white text-black border-white'
+                      : isHovered
+                        ? 'bg-white/90 text-black border-white ring-2 ring-white/50'
+                        : 'bg-black/80 text-white border-white/20 backdrop-blur-xl hover:bg-white/20'
                   )}
                   style={{ left: 0, bottom: 0 }}
                   title={tool.label}
@@ -289,6 +352,40 @@ export function RadialMenu({ onHistoryClick }: RadialMenuProps) {
               title="Verlauf"
             >
               <HistoryIcon size={20} />
+            </motion.button>
+            
+            {/* Media upload button */}
+            <motion.button
+              initial={{ opacity: 0, scale: 0.5, x: 0 }}
+              animate={{ opacity: 1, scale: 1, x: 345, y: -60 }}
+              exit={{ opacity: 0, scale: 0.5, x: 0 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 500, delay: 0.16 }}
+              onClick={() => {
+                setIsOpen(false)
+                onMediaClick?.()
+              }}
+              className="absolute w-11 h-11 rounded-full flex items-center justify-center bg-gradient-to-br from-emerald-500 to-cyan-600 text-white backdrop-blur-xl shadow-lg border border-white/20 hover:scale-105 transition-all"
+              style={{ left: 0, bottom: 0 }}
+              title="Medien hochladen (Bilder, Videos, Audio)"
+            >
+              <MediaIcon size={20} />
+            </motion.button>
+            
+            {/* Export button */}
+            <motion.button
+              initial={{ opacity: 0, scale: 0.5, x: 0 }}
+              animate={{ opacity: 1, scale: 1, x: 400, y: -60 }}
+              exit={{ opacity: 0, scale: 0.5, x: 0 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 500, delay: 0.18 }}
+              onClick={() => {
+                setIsOpen(false)
+                onExportClick?.()
+              }}
+              className="absolute w-11 h-11 rounded-full flex items-center justify-center bg-gradient-to-br from-orange-500 to-amber-600 text-white backdrop-blur-xl shadow-lg border border-white/20 hover:scale-105 transition-all"
+              style={{ left: 0, bottom: 0 }}
+              title="Canvas exportieren (PNG, SVG, JSON)"
+            >
+              <DownloadIcon size={20} />
             </motion.button>
           </>
         )}
@@ -453,6 +550,36 @@ export function RadialMenu({ onHistoryClick }: RadialMenuProps) {
             >
               <NoFillIcon size={14} />
             </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      
+      {/* Sticky note color selector - shows when sticky tool is selected */}
+      <AnimatePresence>
+        {currentTool === 'sticky' && (
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 70, y: isOpen ? -112 : 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 400, delay: 0.05 }}
+            className="absolute flex items-center gap-1 bg-black/80 backdrop-blur-xl rounded-full px-2 py-1.5 border border-white/20"
+            style={{ left: 0, bottom: 8 }}
+          >
+            <span className="text-white/50 text-xs px-1">Farbe:</span>
+            {stickyColors.map((color) => (
+              <button
+                key={color}
+                onClick={() => setToolSettings({ stickyColor: color })}
+                className={clsx(
+                  'w-7 h-7 rounded-full transition-all border-2',
+                  toolSettings.stickyColor === color
+                    ? 'border-white scale-110 shadow-lg'
+                    : 'border-transparent hover:scale-105 hover:border-white/30'
+                )}
+                style={{ backgroundColor: color }}
+                title={color}
+              />
+            ))}
           </motion.div>
         )}
       </AnimatePresence>

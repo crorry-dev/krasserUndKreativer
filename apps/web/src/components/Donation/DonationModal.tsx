@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { CloseIcon } from '@/components/Icons'
 
@@ -7,78 +6,24 @@ interface DonationModalProps {
   onClose: () => void
 }
 
-const DONATION_OPTIONS = [
-  { amount: 2, emoji: '☕', label: 'Kaffee', description: 'Für einen Kaffee zwischendurch' },
-  { amount: 5, emoji: '🍕', label: 'Pizza-Ecke', description: 'Für eine leckere Pizza-Pause' },
-  { amount: 10, emoji: '📚', label: 'Buch', description: 'Für Weiterbildung und neue Features' },
-  { amount: 25, emoji: '🎮', label: 'Indie Game', description: 'Unterstütze uns wie einen Indie-Dev' },
-  { amount: 50, emoji: '🌟', label: 'Super-Supporter', description: 'Du bist großartig!' },
+const SPONSOR_TIERS = [
+  { amount: 2, emoji: '☕', label: 'Kaffee' },
+  { amount: 5, emoji: '🍕', label: 'Pizza' },
+  { amount: 10, emoji: '💾', label: 'Server' },
+  { amount: 25, emoji: '🌟', label: 'Sponsor' },
 ]
 
-const COST_COMPARISONS = [
-  { amount: 0.34, label: '1 Tag Hosting', emoji: '🖥️' },
-  { amount: 0.50, label: '1 GB Datentransfer', emoji: '📶' },
-  { amount: 2.00, label: '1 Woche Hosting', emoji: '⚡' },
-  { amount: 8.00, label: '1 Monat Hosting', emoji: '🚀' },
-]
+const GITHUB_SPONSORS_URL = 'https://github.com/sponsors/crorry-dev'
+const PAYPAL_URL = 'https://paypal.me/tobcro'
 
 export function DonationModal({ isOpen, onClose }: DonationModalProps) {
-  const [selectedAmount, setSelectedAmount] = useState<number | null>(null)
-  const [customAmount, setCustomAmount] = useState('')
-  const [isProcessing, setIsProcessing] = useState(false)
-  const [showSuccess, setShowSuccess] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  
-  const handleDonate = async () => {
-    const amount = customAmount ? parseFloat(customAmount) : selectedAmount
-    if (!amount || amount < 1) return
-    
-    setIsProcessing(true)
-    setError(null)
-    
-    try {
-      // Check if Stripe is configured
-      const configResponse = await fetch('/api/payments/config')
-      const config = await configResponse.json()
-      
-      if (!config.configured) {
-        // Stripe not configured - show demo success
-        console.log('[Donation] Stripe not configured, showing demo mode')
-        await new Promise(resolve => setTimeout(resolve, 1000))
-        setShowSuccess(true)
-        setIsProcessing(false)
-        return
-      }
-      
-      // Create Stripe checkout session
-      const response = await fetch('/api/payments/create-donation', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          amount: Math.round(amount * 100), // Stripe uses cents
-          currency: 'eur',
-          success_url: `${window.location.origin}?donation=success`,
-          cancel_url: `${window.location.origin}?donation=cancelled`,
-        }),
-      })
-      
-      if (!response.ok) {
-        throw new Error('Zahlung konnte nicht gestartet werden')
-      }
-      
-      const { checkout_url } = await response.json()
-      
-      // Redirect to Stripe Checkout
-      window.location.href = checkout_url
-      
-    } catch (err) {
-      console.error('Donation error:', err)
-      setError(err instanceof Error ? err.message : 'Ein Fehler ist aufgetreten')
-      setIsProcessing(false)
-    }
+  const openGitHubSponsors = () => {
+    window.open(GITHUB_SPONSORS_URL, '_blank', 'noopener,noreferrer')
   }
   
-  const finalAmount = customAmount ? parseFloat(customAmount) : selectedAmount
+  const openPayPal = () => {
+    window.open(PAYPAL_URL, '_blank', 'noopener,noreferrer')
+  }
   
   return (
     <AnimatePresence>
@@ -98,176 +43,81 @@ export function DonationModal({ isOpen, onClose }: DonationModalProps) {
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-gray-900 rounded-2xl border border-white/10 shadow-2xl z-50 overflow-hidden"
+            className="fixed top-4 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-sm bg-gray-900 rounded-2xl border border-white/10 shadow-2xl z-50 overflow-hidden"
           >
-            {showSuccess ? (
-              <div className="p-8 text-center">
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ type: 'spring', damping: 10 }}
-                  className="text-6xl mb-4"
-                >
-                  🎉
-                </motion.div>
-                <h2 className="text-2xl font-bold text-white mb-2">Vielen Dank!</h2>
-                <p className="text-white/60 mb-6">
-                  Deine Unterstützung hilft uns, Infinite Canvas weiterzuentwickeln.
-                </p>
-                <button
-                  onClick={onClose}
-                  className="px-6 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg transition-colors"
-                >
-                  Schließen
-                </button>
-              </div>
-            ) : (
-              <>
-                {/* Header */}
-                <div className="p-6 border-b border-white/10 bg-gradient-to-r from-indigo-500/10 to-purple-500/10">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h2 className="text-xl font-semibold text-white">
-                        Unterstütze uns 💜
-                      </h2>
-                      <p className="text-white/50 text-sm mt-1">
-                        Pay-what-you-want – Jeder Beitrag hilft!
-                      </p>
-                    </div>
-                    <button
-                      onClick={onClose}
-                      className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/70"
-                    >
-                      <CloseIcon size={16} />
-                    </button>
-                  </div>
-                </div>
-                
-                {/* Amount Options */}
-                <div className="p-6 space-y-4">
-                  <div className="grid grid-cols-3 gap-2">
-                    {DONATION_OPTIONS.slice(0, 3).map((option) => (
-                      <button
-                        key={option.amount}
-                        onClick={() => {
-                          setSelectedAmount(option.amount)
-                          setCustomAmount('')
-                        }}
-                        className={`p-3 rounded-xl border transition-all ${
-                          selectedAmount === option.amount
-                            ? 'border-indigo-500 bg-indigo-500/20'
-                            : 'border-white/10 bg-white/5 hover:bg-white/10'
-                        }`}
-                      >
-                        <div className="text-2xl mb-1">{option.emoji}</div>
-                        <div className="text-white font-semibold">{option.amount}€</div>
-                        <div className="text-white/50 text-xs">{option.label}</div>
-                      </button>
-                    ))}
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-2">
-                    {DONATION_OPTIONS.slice(3).map((option) => (
-                      <button
-                        key={option.amount}
-                        onClick={() => {
-                          setSelectedAmount(option.amount)
-                          setCustomAmount('')
-                        }}
-                        className={`p-3 rounded-xl border transition-all ${
-                          selectedAmount === option.amount
-                            ? 'border-indigo-500 bg-indigo-500/20'
-                            : 'border-white/10 bg-white/5 hover:bg-white/10'
-                        }`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <span className="text-2xl">{option.emoji}</span>
-                          <div className="text-left">
-                            <div className="text-white font-semibold">{option.amount}€</div>
-                            <div className="text-white/50 text-xs">{option.label}</div>
-                          </div>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                  
-                  {/* Custom Amount */}
-                  <div className="relative">
-                    <input
-                      type="number"
-                      value={customAmount}
-                      onChange={(e) => {
-                        setCustomAmount(e.target.value)
-                        setSelectedAmount(null)
-                      }}
-                      placeholder="Eigener Betrag"
-                      min="1"
-                      step="0.01"
-                      className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white outline-none focus:ring-2 focus:ring-indigo-500 placeholder:text-white/30"
-                    />
-                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-white/50">€</span>
-                  </div>
-                  
-                  {/* Cost Comparison */}
-                  {finalAmount && finalAmount > 0 && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      className="p-3 bg-white/5 rounded-xl"
-                    >
-                      <p className="text-white/60 text-sm mb-2">Das entspricht:</p>
-                      <div className="flex flex-wrap gap-2">
-                        {COST_COMPARISONS.filter(c => c.amount <= (finalAmount || 0)).map((comparison) => {
-                          const count = Math.floor((finalAmount || 0) / comparison.amount)
-                          return (
-                            <span
-                              key={comparison.label}
-                              className="px-2 py-1 bg-white/10 rounded text-xs text-white/70"
-                            >
-                              {comparison.emoji} ~{count}x {comparison.label}
-                            </span>
-                          )
-                        })}
-                      </div>
-                    </motion.div>
-                  )}
-                </div>
-                
-                {/* Footer */}
-                <div className="p-6 border-t border-white/10">
-                  {error && (
-                    <div className="mb-4 p-3 bg-red-500/20 border border-red-500/30 rounded-lg text-red-400 text-sm">
-                      {error}
-                    </div>
-                  )}
-                  
-                  <button
-                    onClick={handleDonate}
-                    disabled={!finalAmount || finalAmount < 1 || isProcessing}
-                    className="w-full py-4 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl font-semibold text-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                  >
-                    {isProcessing ? (
-                      <span className="flex items-center justify-center gap-2">
-                        <motion.span
-                          animate={{ rotate: 360 }}
-                          transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}
-                          className="inline-block w-5 h-5 border-2 border-white/30 border-t-white rounded-full"
-                        />
-                        Wird verarbeitet...
-                      </span>
-                    ) : finalAmount ? (
-                      `${finalAmount.toFixed(2)}€ spenden`
-                    ) : (
-                      'Betrag wählen'
-                    )}
-                  </button>
-                  
-                  <p className="text-center text-white/40 text-xs mt-3">
-                    Sichere Zahlung via Stripe. Keine Verpflichtungen.
+            {/* Header */}
+            <div className="p-4 border-b border-white/10 bg-gradient-to-r from-indigo-500/10 to-purple-500/10">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-lg font-semibold text-white">
+                    Unterstütze uns 💜
+                  </h2>
+                  <p className="text-white/50 text-xs mt-0.5">
+                    Open Source lebt von der Community!
                   </p>
                 </div>
-              </>
-            )}
+                <button
+                  onClick={onClose}
+                  className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/70"
+                >
+                  <CloseIcon size={16} />
+                </button>
+              </div>
+            </div>
+            
+            {/* Content */}
+            <div className="p-4 space-y-3">
+              {/* GitHub Sponsors Info */}
+              <div className="p-3 bg-white/5 rounded-xl border border-white/10 flex items-center gap-3">
+                <svg className="w-6 h-6 text-white shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                </svg>
+                <div>
+                  <div className="font-medium text-white text-sm">GitHub Sponsors</div>
+                  <div className="text-white/50 text-xs">Direkt über GitHub unterstützen</div>
+                </div>
+              </div>
+              
+              {/* Sponsor Tiers - Compact */}
+              <div className="grid grid-cols-4 gap-2">
+                {SPONSOR_TIERS.map((tier) => (
+                  <div
+                    key={tier.amount}
+                    className="p-2 rounded-lg border border-white/10 bg-white/5 text-center"
+                  >
+                    <div className="text-lg">{tier.emoji}</div>
+                    <div className="text-white font-medium text-xs">{tier.amount}€</div>
+                    <div className="text-white/40 text-[10px]">{tier.label}</div>
+                  </div>
+                ))}
+              </div>
+              
+              {/* CTA Buttons */}
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={openGitHubSponsors}
+                  className="py-2.5 bg-gray-800 hover:bg-gray-700 text-white rounded-xl font-medium transition-all flex items-center justify-center gap-2 border border-white/10"
+                >
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                  </svg>
+                  GitHub
+                </button>
+                <button
+                  onClick={openPayPal}
+                  className="py-2.5 bg-[#0070ba] hover:bg-[#005ea6] text-white rounded-xl font-medium transition-all flex items-center justify-center gap-2"
+                >
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M7.076 21.337H2.47a.641.641 0 0 1-.633-.74L4.944 3.72a.77.77 0 0 1 .757-.629h6.724c2.241 0 3.875.502 4.856 1.493.968.982 1.323 2.396.957 4.072-.023.104-.049.211-.076.32-.027.107-.056.218-.088.333-.313 1.127-.816 2.093-1.496 2.869-.689.788-1.536 1.391-2.519 1.793-1.002.41-2.13.617-3.352.617H8.56a.77.77 0 0 0-.758.63l-.726 4.12zm13.273-14.07c-.006.032-.012.063-.02.095a9.075 9.075 0 0 1-.104.438c-.4 1.467-1.125 2.559-2.156 3.246-1.04.694-2.391 1.046-4.016 1.046H11.62l-1.3 7.377h3.86c.199 0 .368-.131.4-.313l.016-.08.618-3.91.04-.217a.413.413 0 0 1 .407-.318h.255c1.66 0 2.96-.337 3.865-1.001.864-.635 1.467-1.524 1.792-2.643.138-.474.218-.909.246-1.307.028-.398-.001-.755-.086-1.07a2.057 2.057 0 0 0-.383-.743z"/>
+                  </svg>
+                  PayPal
+                </button>
+              </div>
+              
+              <p className="text-center text-white/30 text-[10px]">
+                Einmalig oder monatlich unterstützen
+              </p>
+            </div>
           </motion.div>
         </>
       )}
