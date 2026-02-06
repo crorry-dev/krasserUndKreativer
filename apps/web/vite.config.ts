@@ -4,6 +4,8 @@ import path from 'path'
 
 export default defineConfig({
   plugins: [react()],
+  // Base path for GitHub Pages deployment
+  base: process.env.GITHUB_ACTIONS ? '/krasserUndKreativer/' : '/',
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),

@@ -3,7 +3,12 @@ node_modules/
 .pnpm-store/
 
 # GitHub Copilot / AI instructions (private)
-.github/
+.github/copilot-instructions.md
+.github/project-instructions.md
+.github/.clinerules
+.github/.cursorrules
+.github/.windsurfrules
+.github/.gitignore
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

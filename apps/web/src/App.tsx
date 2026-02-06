@@ -200,9 +200,28 @@ function CanvasWrapper() {
   return <BoardPage />
 }
 
+// Get basename for GitHub Pages
+const getBasename = () => {
+  // Check if running on GitHub Pages
+  if (import.meta.env.PROD && window.location.hostname.includes('github.io')) {
+    return '/krasserUndKreativer'
+  }
+  return ''
+}
+
 export default function App() {
+  // Handle SPA redirect from 404.html
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const route = params.get('route')
+    if (route) {
+      // Clean up the URL and navigate
+      window.history.replaceState(null, '', getBasename() + route)
+    }
+  }, [])
+
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={getBasename()}>
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/register" element={<RegisterPage />} />

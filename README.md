@@ -7,6 +7,12 @@ A real-time collaborative whiteboard with infinite zoom capabilities. Draw, writ
 ![Python](https://img.shields.io/badge/Python-3.12-green)
 ![React](https://img.shields.io/badge/React-18.3-61dafb)
 
+## 🌐 Live Demo
+
+**[Try it now → crorry-dev.github.io/krasserUndKreativer](https://crorry-dev.github.io/krasserUndKreativer)**
+
+> The demo runs entirely in your browser with local persistence. No account required!
+
 ## ✨ Features
 
 - **Infinite Zoom** – Zoom from 0.0001% to 1,000,000%+ without limits
